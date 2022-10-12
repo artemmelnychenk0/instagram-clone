@@ -7,7 +7,7 @@ import 'reactjs-popup/dist/index.css';
 import { useNavigate } from "react-router-dom";
 
 import { db } from "../Data/firebase-config";
-import { collection, getDocs, setDoc, doc, query, where, updateDoc, deleteDoc } from 'firebase/firestore'
+import { collection, getDocs, setDoc, doc, query, where } from 'firebase/firestore'
 import { storage } from "../Data/firebase-config";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
@@ -20,7 +20,6 @@ const Profile = ({ toPost }) => {
     const [caption, setCaption] = useState('')
     const [selectedImg, setSelectedImg] = useState(null)
     const [userSigned, setUserSigned] = useState(false)
-    const [postCard, setPostCard] = useState(false)
 
 
     useEffect(() => {
@@ -37,7 +36,8 @@ const Profile = ({ toPost }) => {
         setPosts(data.docs.map((doc) => ({ ...doc.data(), id: doc.id })))
     }
 
-    const createPost = async () => {
+    const createPost = async (e) => {
+        e.preventDefault()
         const timestamp = Date.now();
         //save Img
         const filePath = `${auth.currentUser.displayName}/images/${selectedImg.name}`
@@ -53,14 +53,18 @@ const Profile = ({ toPost }) => {
                             name: `${auth.currentUser.displayName}`,
                             imageUrl: url,
                             time: timestamp,
-                            likes: 0
+                            likes: 0,
+                            comments: [{
+                                user: '',
+                                comment: '',
+                                time: ''
+                            }]
                         })
+
                     })
             })
+
     }
-
-
-
 
     function onAuthStateChange() {
         return auth.onAuthStateChanged(user => {
@@ -87,7 +91,6 @@ const Profile = ({ toPost }) => {
                     <div className="avatarname">{name}</div>
                 </div>
                 <br />
-
                 <Popup trigger={<button className="plus">+</button>} position="right center"
                     modal
                     nested>
@@ -106,21 +109,7 @@ const Profile = ({ toPost }) => {
                                 toPost(post.id);
                                 navigate(`/post/${post.id}`)
                             }}>
-                                {/* <h1>Name: {post.name}</h1>
-                                <h1>Post: {post.caption}</h1> */}
                                 <img src={post.imageUrl} alt='imagePost' />
-                                {/* <h1>Likes: {post.likes}</h1>
-                                <h2>Comment: {post.comments[1]}</h2>
-                                <button
-                                    onClick={() => {
-                                        updateLikes(post.id, post.likes)
-                                    }}>Like
-                                </button>
-                                <button onClick={() => {
-                                    deletePost(post.id)
-                                }}>
-                                    Delete
-                                </button> */}
                             </div>
                         )
                     })}
