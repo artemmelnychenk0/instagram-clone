@@ -1,19 +1,22 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { arrayUnion, deleteDoc, doc, getDoc, updateDoc } from "firebase/firestore"
+import { arrayRemove, arrayUnion, deleteDoc, doc, getDoc, updateDoc } from "firebase/firestore"
 import { useEffect, useState } from "react"
 import { db } from "../Data/firebase-config"
 import { auth } from "../Data/firebase-config";
+import { useNavigate } from "react-router-dom";
 
 const Post = ({ post }) => {
 
     const [posts, setPosts] = useState([])
     const [comment, setComment] = useState('')
-
     const [postLoaded, setPostLoaded] = useState(false)
+    const [updatePage, setUpdatePage] = useState(1)
+
+    const navigate = useNavigate();
 
     useEffect(() => {
         getPosts()
-    }, [])
+    }, [updatePage])
 
     const getPosts = async () => {
         const docRef = doc(db, 'posts', `${post}`);
@@ -35,19 +38,43 @@ const Post = ({ post }) => {
                 })
             }
         )
+        setUpdatePage(updatePage + 1)
+
 
     }
 
-    const updateLikes = async (id, likes) => {
-        console.log(id)
-        const userDoc = doc(db, 'posts', id);
-        const likeIncr = { likes: likes + 1 };
-        await updateDoc(userDoc, likeIncr)
+    const updateLikes = async () => {
+        // const timestamp = Date.now();
+        const docRef = doc(db, 'posts', `${post}`)
+        console.log(posts.likes)
+        if (posts.likes.filter(e => e.user === auth.currentUser.displayName).length > 0) {
+            await updateDoc(docRef,
+                {
+                    likes: arrayRemove({
+                        like: 1,
+                        user: auth.currentUser.displayName
+                    })
+                })
+        } else {
+            await updateDoc(docRef,
+                {
+                    likes: arrayUnion({
+                        like: 1,
+                        user: auth.currentUser.displayName
+                    })
+                }
+            )
+        }
+        setUpdatePage(updatePage + 1)
+
+
     }
 
     const deletePost = async (id) => {
         const userDoc = doc(db, 'posts', id)
         await deleteDoc(userDoc)
+        navigate('/profile')
+
     }
 
     return (
@@ -57,7 +84,7 @@ const Post = ({ post }) => {
                     <h1>Name: {posts.name}</h1>
                     <h1>Post: {posts.caption}</h1>
                     <img src={posts.imageUrl} alt='imagePost' />
-                    <h1>Likes: {posts.likes}</h1>
+                    <h1>Likes: {posts.likes.length}</h1>
 
                     <div>
                         {posts.comments.map(comment => {
@@ -72,7 +99,7 @@ const Post = ({ post }) => {
                     </div>
                     <button
                         onClick={() => {
-                            updateLikes(post, posts.likes)
+                            updateLikes()
                         }}>Like
                     </button>
                     <button onClick={() => {
